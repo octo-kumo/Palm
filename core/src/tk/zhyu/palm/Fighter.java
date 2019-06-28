@@ -230,7 +230,7 @@ public class Fighter extends Actor implements Steerable<Vector2> {
             /*
              * Land
              * */
-            if ((isFalling() || isJumping()) && !isAttacking() && !isHurt() && !isStanding()) {
+            if ((isFalling() || isJumping()) && !isAttacking() && !isHurt() && !isStandingUp()) {
                 current = armed ? IDLE2_ANIMATION : IDLE1_ANIMATION;
             }
             /*
@@ -245,7 +245,7 @@ public class Fighter extends Actor implements Steerable<Vector2> {
             if (isHurt() && current.isAnimationFinished(aTime)) {
                 current = armed ? IDLE2_ANIMATION : IDLE1_ANIMATION;
             }
-            if (isStanding() && current.isAnimationFinished(aTime)) {
+            if (isStandingUp() && current.isAnimationFinished(aTime)) {
                 current = armed ? IDLE2_ANIMATION : IDLE1_ANIMATION;
             }
             if (isKnocked() && current.isAnimationFinished(aTime)) {
@@ -255,7 +255,7 @@ public class Fighter extends Actor implements Steerable<Vector2> {
             /*
              * Do not grant such actions when is attacking or (un)drawing sword.
              * */
-            if (!(isAttacking() || isUnDrawingSword() || isDrawingSword() || isCasting() || isHurt() || isStanding() || isKnocked())) {
+            if (!(isAttacking() || isUnDrawingSword() || isDrawingSword() || isCasting() || isHurt() || isStandingUp() || isKnocked())) {
                 /*
                  * Key A is LEFT
                  * Key D is RIGHT
@@ -338,7 +338,7 @@ public class Fighter extends Actor implements Steerable<Vector2> {
                     aTime = 0;
                     tryAttack();
                 }
-            } else if (isAttacking() && current.isAnimationFinished(aTime) && !isCasting() && !isHurt() && !isStanding()) { // Attack ended
+            } else if (isAttacking() && current.isAnimationFinished(aTime) && !isCasting() && !isHurt() && !isStandingUp()) { // Attack ended
                 current = IDLE2_ANIMATION;
             }
             /*
@@ -347,11 +347,11 @@ public class Fighter extends Actor implements Steerable<Vector2> {
             if (!armed && wannaAttack1 && isReadyToAttackGround()) {
                 current = CAST_START_ANIMATION;
                 aTime = 0;
-            } else if (isCasting() && current.isAnimationFinished(aTime) && current == CAST_START_ANIMATION && !isHurt() && !isStanding()) { // Cast finished.
+            } else if (isCasting() && current.isAnimationFinished(aTime) && current == CAST_START_ANIMATION && !isHurt() && !isStandingUp()) { // Cast finished.
                 current = CAST_ANIMATION;
-            } else if (isCasting() && !wannaAttack1 && !isHurt() && !isStanding()) {
+            } else if (isCasting() && !wannaAttack1 && !isHurt() && !isStandingUp()) {
                 current = IDLE1_ANIMATION;
-            } else if (current == CAST_ANIMATION && current.isAnimationFinished(aTime) && !isHurt() && !isStanding()) {
+            } else if (current == CAST_ANIMATION && current.isAnimationFinished(aTime) && !isHurt() && !isStandingUp()) {
                 aTime = 0;
                 fightScreen.bullets.addBullet(body.getPosition().cpy().add(face ? 1 : -1, 0.25f), face ? 10 : -10, 0, this);
             }
@@ -382,7 +382,7 @@ public class Fighter extends Actor implements Steerable<Vector2> {
             if (velocity.y < -10) {
                 bigImpact = true;
             }
-            if (!isJumping() && !isAttacking() && !isFalling() && !isHurt() && !isStanding()) {
+            if (!isJumping() && !isAttacking() && !isFalling() && !isHurt() && !isStandingUp()) {
                 current = JUMP_ANIMATION;
             }
             if (velocity.y < 0 && isJumping() && !isAttacking() && current != WALL_ANIMATION) {
@@ -390,7 +390,7 @@ public class Fighter extends Actor implements Steerable<Vector2> {
             }/*
              * Attacks in mid-air, divided into in 3 types
              * */
-            if (armed && isReadyToAttackGround()) {
+            if (armed && isReadyToAttackAir()) {
                 if (wannaAttack1) {
                     current = ATTACK1_AIR_ANIMATION;
                     aTime = 0;
@@ -403,19 +403,19 @@ public class Fighter extends Actor implements Steerable<Vector2> {
                     current = ATTACK3_AIR_ANIMATION_START;
                     aTime = 0;
                 }
-            } else if (!armed && !isReadyToAttackGround()) {
+            } else if (!armed && !isReadyToAttackAir()) {
                 if (wannaAttack2) {
                     current = ATTACK_KICK_AIR_ANIMATION;
                     aTime = 0;
                     tryAttack();
                 }
-            } else if (current.isAnimationFinished(aTime) && !isHurt() && !isStanding()) { // Attack ended
+            } else if (current.isAnimationFinished(aTime) && !isHurt() && !isStandingUp()) { // Attack ended
                 /*
                  * Covers the third in air attack
                  * */
                 int state = getAttackingAir3State();
                 if (current != ATTACK_KICK_AIR_ANIMATION) {
-                    if (state == 0 || state == 4) current = IDLE2_ANIMATION;
+                    if (state == 0 || state == 4) current = velocity.y > 0 ? JUMP_ANIMATION : FALL_ANIMATION;
                     else if (state == 1) current = ATTACK3_AIR_ANIMATION_LOOP;
                 }
             }
@@ -478,7 +478,7 @@ public class Fighter extends Actor implements Steerable<Vector2> {
         return current == HURT_ANIMATION;
     }
 
-    private boolean isStanding() {
+    private boolean isStandingUp() {
         return current == STAND_ANIMATION;
     }
 
@@ -499,7 +499,11 @@ public class Fighter extends Actor implements Steerable<Vector2> {
     }
 
     private boolean isReadyToAttackGround() {
-        return !isAttacking() && !isCrouching() && !isCasting() && !isKnocked() && !isHurt() && !isStanding() && isOnGround();
+        return !isAttacking() && !isCrouching() && !isCasting() && !isKnocked() && !isHurt() && !isStandingUp() && isOnGround();
+    }
+
+    private boolean isReadyToAttackAir() {
+        return !isAttacking() && !isCrouching() && !isCasting() && !isKnocked() && !isHurt() && !isStandingUp() && !isOnGround();
     }
 
     static void init() {
